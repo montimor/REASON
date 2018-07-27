@@ -742,7 +742,6 @@ class Node_generation_main():#_valider_#-----------------------------
 	def _generation_code_main(self):
 		self._open_file()
 		self._import_lib()
-		self._pub_sub._import_lib()
 		self._def_if_main()
 		self._close_file()
 
