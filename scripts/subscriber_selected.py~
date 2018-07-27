@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+import rospy
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+
+def _odom_sub():
+	rospy.Subscriber('/odom', Odometry, callback_odom_sub)
+
+def _mobile_base_commands_velocity_sub():
+	rospy.Subscriber('/mobile_base/commands/velocity', Twist, callback_mobile_base_commands_velocity_sub)
+
+def callback_odom_sub(data):
+	print(data) #Display the values of the topic, uncomment to show it
+
+def callback_mobile_base_commands_velocity_sub(data):
+	print(data) #Display the values of the topic, uncomment to show it
+
+if __name__ == '__main__':
+	rospy.init_node('Subscriber_node', anonymous=True)
+	_odom_sub()
+	_mobile_base_commands_velocity_sub()
+	rospy.spin()
