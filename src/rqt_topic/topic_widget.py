@@ -529,9 +529,6 @@ class Pub_Sub():#_valider_#-----------------------------
 		self._genecode = genecode
 		self._liste_msg_name = []
 		self._liste_msg_type = []
-		self._path_dir = self._genecode._topicwidget.workspace_directory.text()
-		self._def_name = self._path_dir+"Command_class.py"
-		self._custom_name = self._path_dir+(self._genecode._topicwidget.name_line_edit.text().replace(' ','_')+"_class.py")
 
 
 	def _open_file(self):
@@ -565,7 +562,7 @@ class Pub_Sub():#_valider_#-----------------------------
 			self.my_file_class.write('from {0}.msg import {1}\n'.format(frome,importe))#from ... import ....
 
 	def _my_name_class(self):
-		self.my_file_class.write('\nclass node_generation() :\n'.format())
+		self.my_file_class.write('\nclass Command() :\n'.format())
 
 	def _my_init(self):
 		self.my_file_class.write('\tdef __init__(self) :\n'.format())
@@ -574,13 +571,20 @@ class Pub_Sub():#_valider_#-----------------------------
 		index = 0
 		for elem in self._genecode._list_topics_name_sub_selected :
 			type_topic = self._genecode._dict_topics[elem]
-			self.my_file_class.write('\t\tself._data{0}_sub = {1}()\n'.format(elem.replace("/","_"),type_topic[type_topic.find("/")+1:len(type_topic)]))
+			self.my_file_class.write('\t\tself._data{0} = {1}()\n'.format(elem.replace("/","_"),type_topic[type_topic.find("/")+1:len(type_topic)]))
+			index = index + 1
+		index = 0
+		for elem in self._genecode._list_topics_name_sub_selected :
+			type_topic = self._genecode._dict_topics[elem]
+			self.my_file_class.write('\t\tself.sub{3} = rospy.Subscriber({1}{0}{1}, {2}, self._callback{3})\n'.format(elem,"'",type_topic[type_topic.find("/")+1:len(type_topic)],elem.replace('/','_')))
 			index = index + 1
 		index = 0
 		for elem in self._genecode._list_topics_name_pub_selected :
 			type_topic = self._genecode._dict_topics[elem]
-			self.my_file_class.write('\t\tself._data{0}_pub = {1}()\n'.format(elem.replace("/","_"),type_topic[type_topic.find("/")+1:len(type_topic)]))
+			self.my_file_class.write('\t\tself.pub{0} = rospy.Publisher({2}{1}{2}, {3}, queue_size=10)\n'.format(elem.replace("/","_"),elem,"'",type_topic[type_topic.find("/")+1:len(type_topic)]))
 			index = index + 1
+		
+		
 
 	def _information_message(self):
 		self.my_file_class.write('#if you want some information about this messages, you can \n#check the following links. The links provide information about \n#the composition of the message.\n\n'.format())
@@ -590,71 +594,50 @@ class Pub_Sub():#_valider_#-----------------------------
 			importe = elem[elem.find("/")+1:len(elem)]#Retrieves the second part of the message
 			self.my_file_class.write('#{0} => http://docs.ros.org/melodic/api/{1}/html/msg/{0}.html\n'.format(importe,frome))
 
-	def _def_method_sub(self):
-		index = 0
-		for elem in self._genecode._list_topics_name_sub_selected :
-			self.my_file_class.write('\n\tdef {0}_sub(self):\n'.format(elem.replace('/','_'))) 
-			type_topic = self._genecode._dict_topics[elem]
-			self.my_file_class.write('\t\trospy.Subscriber({1}{0}{1}, {2}, self._callback{3}_sub)\n'.format(elem,"'",type_topic[type_topic.find("/")+1:len(type_topic)],elem.replace('/','_')))
-			index = index+1
+
 
 	def _def_callback_sub(self):
 		index=0
 		for elem in self._genecode._list_topics_name_sub_selected : 
-			self.my_file_class.write('\n\tdef _callback{0}_sub(self,data):\n'.format(elem.replace('/','_'))) 
-			self.my_file_class.write('\t\tself._data{0}_sub=data\n'.format(elem.replace("/","_")))
+			self.my_file_class.write('\n\tdef _callback{0}(self,data):\n'.format(elem.replace('/','_'))) 
+			self.my_file_class.write('\t\tself._data{0}=data\n'.format(elem.replace("/","_")))
 			index = index + 1
 
 	def _def_get_data(self):
 		index=0
 		for elem in self._genecode._list_topics_name_sub_selected : 
 			self.my_file_class.write('\n\tdef _get{0}(self):\n'.format(elem.replace('/','_'))) 
-			self.my_file_class.write('\t\treturn self._data{0}_sub\n'.format(elem.replace("/","_")))
+			self.my_file_class.write('\t\treturn self._data{0}\n'.format(elem.replace("/","_")))
 			index = index + 1
 
 	def _def_method_pub(self):
 		index = 0
 		for elem in self._genecode._list_topics_name_pub_selected :
-			self.my_file_class.write('\n\tdef {0}_pub(self):\n'.format(elem.replace('/','_'))) 
 			type_topic = self._genecode._dict_topics[elem]
-			self.my_file_class.write('\t\tpub = rospy.Publisher({1}{0}{1}, {2}, queue_size=10)\n'.format(elem,"'",type_topic[type_topic.find("/")+1:len(type_topic)]))
-			self.my_file_class.write('\t\tdata = self._data{0}_pub #Initialize the message to publish\n'.format(elem.replace("/","_")))
-			self.my_file_class.write('\t\tpub.publish(data) #Publish your data\n'.format())
+			self.my_file_class.write('\n\tdef _publish{0}(self,{1}_msgs):\n'.format(elem.replace('/','_'),type_topic[type_topic.find("/")+1:len(type_topic)])) 
+			self.my_file_class.write('\t\tself.pub{0}.publish({1}_msgs) #Publish your data\n'.format(elem.replace("/","_"),type_topic[type_topic.find("/")+1:len(type_topic)]))
 			index = index+1
-
-	def _def_set_data(self):
-		index=0
-		for elem in self._genecode._list_topics_name_pub_selected : 
-			type_topic = self._genecode._dict_topics[elem]
-			self.my_file_class.write('\n\tdef _set{0}(self,{1}_msgs):\n'.format(elem.replace('/','_'),type_topic[type_topic.find("/")+1:len(type_topic)]))
-			self.my_file_class.write('\t\tself._data{0}_pub = {1}_msgs\n'.format(elem.replace("/","_"),type_topic[type_topic.find("/")+1:len(type_topic)]))
-			index = index + 1
 
 	def _def_if_main(self):
 		self.my_file_class.write("\nif __name__ == '__main__':\n")
-		self.my_file_class.write("\tcommand_node = node_generation()\n")
+		self.my_file_class.write("\tcommand_node = Command()\n")
 		if (len(self._genecode._topicwidget._interface_pub_sub._name_file) == 0) :
 			self.my_file_class.write('\trospy.init_node({0}Command_node{0}, anonymous=True)\n'.format("'"))
 		else :
 			self.my_file_class.write('\trospy.init_node({0}{1}_node{0}, anonymous=True)\n'.format("'",self._genecode._topicwidget._interface_pub_sub._name_file.replace(' ','_')))
 		self.my_file_class.write('\trate = rospy.Rate({0})\n'.format(self._genecode._topicwidget._interface_pub_sub._get_frequency()))
 		self.my_file_class.write('\twhile not rospy.is_shutdown():\n'.format())
-		for elem in self._genecode._list_topics_name_pub_selected:
-			self.my_file_class.write('\t\t{0}{1}_pub()\n'.format("command_node.",elem.replace('/','_')))
-		for elem in self._genecode._list_topics_name_sub_selected:
-			self.my_file_class.write('\t\t{0}{1}_sub()\n'.format("command_node.",elem.replace('/','_')))
+		self.my_file_class.write('\t\t#insert here your use case, don t forget the chmod +x name_of_your_script \n'.format())
 		self.my_file_class.write('\t\trate.sleep()\n'.format())
 
 	def _class(self):
+		self._information_message()
 		self._my_name_class()
 		self._my_init()
 		self._my_class_attributes()
-		self._information_message()
-		self._def_method_sub()
 		self._def_callback_sub()
 		self._def_get_data()
 		self._def_method_pub()
-		self._def_set_data()
 		self._def_if_main()
 
 	def _generation_code_pub_true_sub_true(self):
@@ -719,29 +702,44 @@ class Node_generation_main():#_valider_#-----------------------------
 		self.my_file_main.write("#!/usr/bin/env python\n")
 		self.my_file_main.write("import rospy\n")
 		if (len(self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file) == 0):
-			self.my_file_main.write('from Command_class import node_generation\n'.format())
+			self.my_file_main.write('from Command_class import Command\n'.format())
 		else :
-			self.my_file_main.write('from {0}_class import node_generation\n'.format(self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file.replace(" ","_")))
-		
+			self.my_file_main.write('from {0}_class import Command\n'.format(self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file.replace(" ","_")))
+		for elem in self._pub_sub._liste_msg_type :
+			frome = elem[0:elem.find("/")]#Retrieves the first part of the message
+			importe = elem[elem.find("/")+1:len(elem)]#Retrieves the second part of the message
+			self.my_file_main.write('from {0}.msg import {1}\n'.format(frome,importe))#from ... import ....
+
+
+	def _def_data_msgs(self):
+		for elem in self._pub_sub._liste_msg_type :
+			self.my_file_main.write('\t_{0}_msgs = {1}()\n'.format(elem[elem.find("/")+1:len(elem)].lower(),elem[elem.find("/")+1:len(elem)]))
+
+	def _information_message(self):
+		self.my_file_main.write('#if you want some information about this messages, you can \n#check the following links. The links provide information about \n#the composition of the message.\n\n'.format())
+		for elem in self._pub_sub._liste_msg_type :
+			frome = elem[0:elem.find("/")]#Retrieves the first part of the message
+			importe = elem[elem.find("/")+1:len(elem)]#Retrieves the second part of the message
+			self.my_file_main.write('#{0} => http://docs.ros.org/melodic/api/{1}/html/msg/{0}.html\n'.format(importe,frome))
+
 	def _def_if_main(self):
 		self.my_file_main.write("\nif __name__ == '__main__':\n")
-		self.my_file_main.write("\tcommand_node = node_generation()\n")
+		self.my_file_main.write("\t_command = Command()\n")
+		self._def_data_msgs()
 		if (len(self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file) == 0) :
-			self.my_file_main.write('\trospy.init_node({0}Command_node{0}, anonymous=True)\n'.format("'"))
+			self.my_file_main.write('\trospy.init_node({0}my_command_node{0}, anonymous=True)\n'.format("'"))
 		else :
-			self.my_file_main.write('\trospy.init_node({0}{1}_node{0}, anonymous=True)\n'.format("'",self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file.replace(' ','_')))
+			self.my_file_main.write('\trospy.init_node({0}{1}{0}, anonymous=True)\n'.format("'",self._pub_sub._genecode._topicwidget._interface_pub_sub._name_file.replace(' ','_')))
 		self.my_file_main.write('\trate = rospy.Rate({0})\n'.format(self._pub_sub._genecode._topicwidget._interface_pub_sub._get_frequency()))
 		self.my_file_main.write('\twhile not rospy.is_shutdown():\n'.format())
-		for elem in self._pub_sub._genecode._list_topics_name_pub_selected:
-			self.my_file_main.write('\t\t{0}{1}_pub()\n'.format("command_node.",elem.replace('/','_')))
-		for elem in self._pub_sub._genecode._list_topics_name_sub_selected:
-			self.my_file_main.write('\t\t{0}{1}_sub()\n'.format("command_node.",elem.replace('/','_')))
+		self.my_file_main.write('\t\t#insert your use case here, don t forget the chmod +x name_of_your_script\n'.format())
 		self.my_file_main.write('\t\trate.sleep()\n'.format())
 
 
 	def _generation_code_main(self):
 		self._open_file()
 		self._import_lib()
+		self._information_message()
 		self._def_if_main()
 		self._close_file()
 
